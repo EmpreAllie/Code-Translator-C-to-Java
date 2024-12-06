@@ -74,7 +74,6 @@ func_decl:
 	|
 	TYPE MAIN OPAREN EPAREN OBRACE body EBRACE {
 		/* Deleting '0' from 'return 0;' */
-		printf("%s\n%s\n%s %s %s %s", $$, $1, $2, $3, $4, $5);
 		if (strcmp($2, "main") == 0) {
 			char* p = strstr($6, "return");
 			if (p != NULL) {

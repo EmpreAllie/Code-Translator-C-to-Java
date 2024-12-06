@@ -1,4 +1,4 @@
-/* Ñ part */
+/* C  part */
 %{
 #include <stdio.h>
 #include <string.h>
