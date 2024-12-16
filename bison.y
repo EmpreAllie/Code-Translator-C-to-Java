@@ -33,12 +33,15 @@ char* gen_tabs();
 
 %token<number> NUMBER 
 %token<variable> TYPE NAME 
-%token<lexems> PRINTF MAIN INT RETURN EXIT
+%token<lexems> PRINTF MAIN INT RETURN EXIT IF ELSE FOR
 %token<data> STRING_LITERAL
-%token<ops> OPAREN EPAREN OBRACE EBRACE SEMICOLON ASSIGN
+%token<ops> OPAREN EPAREN OBRACE EBRACE SEMICOLON COMMA INCREMENT ASSIGN ADD_ASSIGN DIV_ASSIGN
+%token<ops> EQUALS MORE LESS
 
 %type<nonterm> prog rules rule_func func_decl body statements printf_expr expression func_call 
 %type<nonterm> var_operation var_declar var_init var_assign
+%type<nonterm> branching logical_expr logical_operator if_stmt elif_stmt else_stmt
+%type<nonterm> loop for_loop var_assign_in_for
 
 %start prog
 
@@ -71,9 +74,8 @@ rule_func:
 	}
   	|
 	func_decl OPAREN EPAREN OBRACE body EBRACE { 
-		tablvl++;
-		sprintf($$, "%s %s\n%s%s", $1, $4, $5, $6);
 		tablvl--;
+		sprintf($$, "%s %s\n%s%s", $1, $4, $5, $6);
 	}
 	;
 
@@ -103,29 +105,43 @@ body:
 	;
 
 
-statements:
+statements: {tablvl++;}
+	|
 	func_call { 
-		tablvl++;
+//		tablvl++;
 		char* tabs = gen_tabs();
 		sprintf($$, "%s%s", tabs, $1); 
 		free(tabs);
-		tablvl--;
+//		tablvl--;
 	}
 	|
 	expression { 
-		tablvl++; 
+//		tablvl++; 
 		char* tabs = gen_tabs(); 
 		sprintf($$, "%s%s", tabs, $1);
 		free(tabs);
-		tablvl--;
+//		tablvl--;
 	}
 	|
 	var_operation {
-		tablvl++; 
+//		tablvl++; 
 		char* tabs = gen_tabs(); 
 		sprintf($$, "%s%s", tabs, $1);
 		free(tabs);
-		tablvl--;
+//		tablvl--;
+	}
+	|
+	branching {
+//		tablvl++;
+		char* tabs = gen_tabs(); 
+		sprintf($$, "%s%s", tabs, $1);
+		free(tabs);
+	}
+	|
+	loop {
+		char* tabs = gen_tabs(); 
+		sprintf($$, "%s%s", tabs, $1);
+		free(tabs);		
 	}
 	;
 
@@ -156,13 +172,93 @@ var_init:
 
 var_assign:
 	NAME ASSIGN expression SEMICOLON {sprintf($$, "%s %s %s%s", $1, $2, $3, $4);}
+	|
+	NAME ADD_ASSIGN expression SEMICOLON {sprintf($$, "%s %s %s%s", $1, $2, $3, $4);}
+	|
+	NAME DIV_ASSIGN expression SEMICOLON {sprintf($$, "%s %s %s%s", $1, $2, $3, $4);}
+	|
+	NAME INCREMENT SEMICOLON { sprintf($$, "%s%s%s", $1, $2, $3); }	
+	;
 
+var_assign_in_for:
+	NAME ADD_ASSIGN expression {sprintf($$, "%s %s %s", $1, $2, $3);}
+	|
+	NAME DIV_ASSIGN expression {sprintf($$, "%s %s %s", $1, $2, $3);}
+	|
+	NAME INCREMENT { sprintf($$, "%s%s", $1, $2); }	
+	;
+
+
+
+branching:
+	if_stmt {sprintf($$, "%s", $1);}
+	|
+	elif_stmt {sprintf($$, "%s", $1);}
+	|
+	else_stmt {sprintf($$, "%s", $1);}
+	;
+
+if_stmt:
+	IF OPAREN logical_expr EPAREN OBRACE body EBRACE {
+//		tablvl++; 
+		char* tabs = gen_tabs(); 
+		sprintf($$, "%s %s%s%s %s\n%s\n%s%s", $1, $2, $3, $4, $5, $6, tabs, $7);
+		free(tabs);
+//		tablvl--; 
+	}
+	;
+
+elif_stmt:
+	ELSE IF OPAREN logical_expr EPAREN OBRACE body EBRACE {
+        	sprintf($$, "%s %s %s%s%s %s\n%s\n%s", $1, $2, $3, $4, $5, $6, $7, $8);
+	}
+	;
+
+else_stmt:
+	ELSE OBRACE body EBRACE {
+		sprintf($$, "%s %s\n%s\n%s", $1, $2, $3, $4);
+	}
+	;
+
+
+loop:
+	for_loop {
+		sprintf($$, "%s", $1);
+	}
+	;
+
+for_loop:
+	FOR OPAREN var_init logical_expr SEMICOLON var_assign_in_for EPAREN OBRACE body EBRACE {
+		sprintf($$, "%s %s%s %s%s %s%s %s\n%s\n%s", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10);	
+	}
+	|
+	FOR OPAREN var_assign logical_expr SEMICOLON var_assign_in_for EPAREN OBRACE body EBRACE {
+		sprintf($$, "%s %s%s %s%s %s%s %s\n%s\n%s", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10);	
+	}
+
+	;
+
+
+
+logical_expr:
+	expression logical_operator expression { sprintf($$, "%s %s %s", $1, $2, $3); }
+	;
+
+logical_operator:
+	EQUALS {sprintf($$, "%s", $1);}
+	|
+	MORE {sprintf($$, "%s", $1);}
+	|
+	LESS {sprintf($$, "%s", $1);}
+	;
 
 expression:
 	STRING_LITERAL { sprintf($$, "%s", $1); }	
 	|
 	NUMBER { sprintf($$, "%d", $1); };
-
+	|
+	NAME {sprintf($$, "%s", $1);}
+	;
 
 printf_expr: 
 	expression { sprintf($$, "%s", $1); }
