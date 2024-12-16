@@ -14,6 +14,9 @@ int yyparse(void);
 
 int yydebug = 1;
 
+int tablvl = 0;
+char* gen_tabs();
+
 %}
 
 
@@ -23,7 +26,7 @@ int yydebug = 1;
 	int number;
 	char variable[64];
 	char lexems[128];
-	char nonterm[64];
+	char nonterm[1024];
 	char single_chars[2];
 	char data[512];
 }
@@ -45,21 +48,31 @@ int yydebug = 1;
 prog: 
 	rules {
 		fprintf(yyout, "class HelloWorld {\n");
-		fprintf(yyout, "\t%s", $1);
+		fprintf(yyout, "%s", $1);
 		fprintf(yyout, "}\n");
 	}
 	;
 
 rules:
-	rule_func { sprintf($$, "%s\n", $1); } 
+	rule_func { tablvl++; char* tabs = gen_tabs(); sprintf($$, "%s%s\n", tabs, $1); free(tabs); tablvl--; } 
 	|
-	rules rule_func { sprintf($$, "%s\n%s", $1, $2); }
+	rules rule_func { 
+		char* tabs = gen_tabs();
+		sprintf($$, "%s\n%s%s", $1, tabs, $2); 
+		free(tabs);
+	}
 	;
 
 rule_func:
-	func_decl OPAREN EPAREN OBRACE EBRACE {	sprintf($$, "%s\n\t%s", $1, $5); }
+	func_decl OPAREN EPAREN OBRACE EBRACE {			
+		sprintf($$, "%s\n%s", $1, $5); 
+	}
   	|
-	func_decl OPAREN EPAREN OBRACE body EBRACE { sprintf($$, "%s %s\n%s\n\n%s\n", $1, $4, $5, $6); }
+	func_decl OPAREN EPAREN OBRACE body EBRACE { 
+		tablvl++;
+		sprintf($$, "%s %s\n%s%s", $1, $4, $5, $6);
+		tablvl--;
+	}
 	;
 
 func_decl:
@@ -70,35 +83,55 @@ func_decl:
 
 
 body:
-	statements { sprintf($$, "\t%s", $1);  }
+	statements { 
+		tablvl++;
+		char* tabs = gen_tabs();
+		sprintf($$, "%s%s", tabs, $1);  
+		free(tabs);
+		tablvl--;
+	}
 	| 
-	body statements { sprintf($$, "%s\n%s", $1, $2); }
+	body statements { 
+		tablvl++;
+		char* tabs = gen_tabs();
+		sprintf($$, "%s\n%s%s", $1, tabs, $2); 
+		free(tabs);
+		tablvl--;
+	}
 	;
 
 
 statements:
-	func_call { sprintf($$, "%s", $1); }
+	func_call { 
+		tablvl++;
+		char* tabs = gen_tabs();
+		sprintf($$, "%s%s", tabs, $1); 
+		free(tabs);
+		tablvl--;
+	}
 	|
-	expression { sprintf($$, "\t%s", $1); }
+	expression { /*tablvl++; gen_tabs();*/ sprintf($$, "%s", $1); }
 	;
 
 func_call:
-	PRINTF OPAREN printf_expr EPAREN SEMICOLON { sprintf($$, "System.out.println%s%s%s%s\n", $2, $3, $4, $5); }
+	PRINTF OPAREN printf_expr EPAREN SEMICOLON { sprintf($$, "System.out.println%s%s%s%s", $2, $3, $4, $5); }
 	|
-	EXIT OPAREN expression EPAREN SEMICOLON { }
+	EXIT OPAREN expression EPAREN SEMICOLON { sprintf($$, ""); }
 	|
-	RETURN expression SEMICOLON { sprintf($$, "\t%s %s%s", $1, $2, $3); }
+	RETURN expression SEMICOLON { sprintf($$, "%s %s%s", $1, $2, $3); }
 	;
+
+
+expression:
+	STRING_LITERAL { sprintf($$, "%s", $1); }	
+	|
+	NUMBER { sprintf($$, "%d", $1); };		
 
 
 printf_expr: 
 	expression { sprintf($$, "%s", $1); }
 	;
 
-expression:
-	STRING_LITERAL { sprintf($$, "%s", $1); }	
-	|
-	NUMBER { sprintf($$, "%d", $1); };		
 
 %%
 
@@ -118,6 +151,15 @@ int main()
 	fclose(yyout);
 	return 0;
 } 
+
+char* gen_tabs() {
+	char* result = malloc(tablvl * sizeof(char) + 1);
+	for (int i = 0; i < tablvl; i++)
+		result[i]='\t';
+
+	result[tablvl]='\0';
+	return result;
+}
 
 void yyerror(char* s)
 {
