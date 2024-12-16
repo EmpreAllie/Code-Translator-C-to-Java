@@ -2,5 +2,6 @@
 #include <stdlib.h>
 
 int main() {
-	return 0;
+	printf("Hello World");
+	exit(0);
 }

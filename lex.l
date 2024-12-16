@@ -1,4 +1,4 @@
-/* C  part */
+/* Cu part */
 %{
 #include <stdio.h>
 #include <string.h>
@@ -9,22 +9,25 @@
 /* RegExes and Tokens */ 
 %%
 
-#include.*			{ ; }
+#include.*			{  }
 
-"int"				{ yylval.variable = strdup(yytext); return TYPE; }
-"main"				{ yylval.lexems = strdup(yytext); return MAIN; }
-"return"			{ yylval.lexems = strdup(yytext); return RETURN; }
+"int"				{ strcpy(yylval.variable, yytext); return TYPE; }
+"main"				{ strcpy(yylval.lexems, yytext); return MAIN; }
+"return"			{ strcpy(yylval.lexems, yytext); return RETURN; }
 "printf"			return PRINTF;
+"exit"				return EXIT;
 
 [0-9]+				{ yylval.number = atoi(yytext); return NUMBER; }
 [_a-zA-Z][_a-zA-Z0-9]*          { strcpy(yylval.variable, yytext); return NAME; }
-[ \t\r\n]      			{ ; }
+[ \t\r\n]      			{  }
 
-"("				{ yylval.data = strdup(yytext); return OPAREN; }
-")"				{ yylval.data = strdup(yytext); return EPAREN; }
-"{"				{ yylval.data = strdup(yytext); return OBRACE; }
-"}"				{ yylval.data = strdup(yytext); return EBRACE; }
-";"				{ yylval.data = strdup(yytext); return SEMICOLON; }
+"("				{ strcpy(yylval.single_chars, yytext); return OPAREN; }
+")"				{ strcpy(yylval.single_chars, yytext); return EPAREN; }
+"{"				{ strcpy(yylval.single_chars, yytext); return OBRACE; }
+"}"				{ strcpy(yylval.single_chars, yytext); return EBRACE; }
+";"				{ strcpy(yylval.single_chars, yytext); return SEMICOLON; }
+
+["][^"].*["]			{ strcpy(yylval.data, yytext); return STRING_LITERAL; }
 
 %%
 

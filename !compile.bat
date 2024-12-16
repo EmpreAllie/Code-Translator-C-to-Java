@@ -1,3 +1,3 @@
-bison -d bison.y
+bison -dt bison.y
 flex lex.l
-gcc bison.tab.c -o !run
+gcc lex.yy.c bison.tab.c -o !run
