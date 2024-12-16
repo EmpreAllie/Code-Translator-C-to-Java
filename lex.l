@@ -11,7 +11,8 @@
 
 #include.*			{  }
 
-"int"				{ strcpy(yylval.variable, yytext); return TYPE; }
+"int"|"double"			{ strcpy(yylval.variable, yytext); return TYPE; }
+
 "main"				{ strcpy(yylval.lexems, yytext); return MAIN; }
 "return"			{ strcpy(yylval.lexems, yytext); return RETURN; }
 "printf"			return PRINTF;
@@ -21,11 +22,13 @@
 [_a-zA-Z][_a-zA-Z0-9]*          { strcpy(yylval.variable, yytext); return NAME; }
 [ \t\r\n]      			{  }
 
-"("				{ strcpy(yylval.single_chars, yytext); return OPAREN; }
-")"				{ strcpy(yylval.single_chars, yytext); return EPAREN; }
-"{"				{ strcpy(yylval.single_chars, yytext); return OBRACE; }
-"}"				{ strcpy(yylval.single_chars, yytext); return EBRACE; }
-";"				{ strcpy(yylval.single_chars, yytext); return SEMICOLON; }
+"("				{ strcpy(yylval.ops, yytext); return OPAREN; }
+")"				{ strcpy(yylval.ops, yytext); return EPAREN; }
+"{"				{ strcpy(yylval.ops, yytext); return OBRACE; }
+"}"				{ strcpy(yylval.ops, yytext); return EBRACE; }
+";"				{ strcpy(yylval.ops, yytext); return SEMICOLON; }
+"="				{ strcpy(yylval.ops, yytext); return ASSIGN; }
+
 
 ["][^"].*["]			{ strcpy(yylval.data, yytext); return STRING_LITERAL; }
 

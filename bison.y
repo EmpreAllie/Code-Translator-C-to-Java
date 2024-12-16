@@ -27,16 +27,18 @@ char* gen_tabs();
 	char variable[64];
 	char lexems[128];
 	char nonterm[1024];
-	char single_chars[2];
+	char ops[4];
 	char data[512];
 }
 
 %token<number> NUMBER 
 %token<variable> TYPE NAME 
 %token<lexems> PRINTF MAIN INT RETURN EXIT
-%token<data> OPAREN EPAREN OBRACE EBRACE SEMICOLON STRING_LITERAL
+%token<data> STRING_LITERAL
+%token<ops> OPAREN EPAREN OBRACE EBRACE SEMICOLON ASSIGN
 
-%type<nonterm> prog rules rule_func func_decl body statements printf_expr expression func_call
+%type<nonterm> prog rules rule_func func_decl body statements printf_expr expression func_call 
+%type<nonterm> var_operation var_declar var_init var_assign
 
 %start prog
 
@@ -110,7 +112,21 @@ statements:
 		tablvl--;
 	}
 	|
-	expression { /*tablvl++; gen_tabs();*/ sprintf($$, "%s", $1); }
+	expression { 
+		tablvl++; 
+		char* tabs = gen_tabs(); 
+		sprintf($$, "%s%s", tabs, $1);
+		free(tabs);
+		tablvl--;
+	}
+	|
+	var_operation {
+		tablvl++; 
+		char* tabs = gen_tabs(); 
+		sprintf($$, "%s%s", tabs, $1);
+		free(tabs);
+		tablvl--;
+	}
 	;
 
 func_call:
@@ -122,10 +138,30 @@ func_call:
 	;
 
 
+var_operation:
+	var_declar {sprintf($$, "%s", $1);}
+	|
+	var_init {sprintf($$, "%s", $1);}
+	|
+	var_assign {sprintf($$, "%s", $1);}
+	;
+
+var_declar:
+	TYPE NAME SEMICOLON { sprintf($$, "%s %s%s", $1, $2, $3); }
+	;
+
+var_init:
+	TYPE NAME ASSIGN expression SEMICOLON {sprintf($$, "%s %s %s %s%s", $1, $2, $3, $4, $5);}
+	;
+
+var_assign:
+	NAME ASSIGN expression SEMICOLON {sprintf($$, "%s %s %s%s", $1, $2, $3, $4);}
+
+
 expression:
 	STRING_LITERAL { sprintf($$, "%s", $1); }	
 	|
-	NUMBER { sprintf($$, "%d", $1); };		
+	NUMBER { sprintf($$, "%d", $1); };
 
 
 printf_expr: 
